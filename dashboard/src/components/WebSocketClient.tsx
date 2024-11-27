@@ -35,7 +35,8 @@ const WebSocketClient: React.FC = () => {
 
             if ("onmessage" in wsRef.current) {
                 wsRef.current.onmessage = (event: MessageEvent) => {
-                    appendMessage(`Received: ${event.data}`);
+                    const distanceData = new Int16Array(event.data); // assuming that only distance data is send
+                    appendMessage(`Received: ${distanceData}`);
                 };
             }
 
