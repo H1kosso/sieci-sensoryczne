@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import styles from './WebSocketClient.module.css';
 import useWASD from "use-wasd";
+import appCfg from '../app-cfg';
 
 interface Message {
     text: string;
@@ -24,7 +25,8 @@ const WebSocketClient: React.FC = () => {
 
     useEffect(() => {
         const setupWebSocket = () => {
-            wsRef.current = new WebSocket('ws://localhost:3000');
+            const webSocketType = appCfg.isSecure ? 'wss' : 'ws';
+            wsRef.current = new WebSocket(`${webSocketType}://${appCfg.apiUrl}`);
 
             if ("onopen" in wsRef.current) {
                 wsRef.current.onopen = () => {
