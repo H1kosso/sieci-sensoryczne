@@ -27,6 +27,7 @@ const WebSocketClient: React.FC = () => {
         const setupWebSocket = () => {
             const webSocketType = appCfg.isSecure ? 'wss' : 'ws';
             wsRef.current = new WebSocket(`${webSocketType}://${appCfg.apiUrl}`);
+            wsRef.current.binaryType = 'arraybuffer';
 
             if ("onopen" in wsRef.current) {
                 wsRef.current.onopen = () => {
@@ -37,7 +38,11 @@ const WebSocketClient: React.FC = () => {
 
             if ("onmessage" in wsRef.current) {
                 wsRef.current.onmessage = (event: MessageEvent) => {
-                    appendMessage(`Received: ${event.data}`);
+                    console.log(event.data);
+                    if (event.data instanceof ArrayBuffer) {
+                        const distanceData = new Int16Array(event.data);
+                        appendMessage(`Received: ${distanceData.toString()}`);
+                    }
                 };
             }
 
@@ -67,9 +72,12 @@ const WebSocketClient: React.FC = () => {
     useEffect(() => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
             const currentState = [w, a, s, d];
-            const dataString = currentState.map(b => b ? '1' : '0').join(',');
+
+            const stateContainer = new Uint8Array(currentState.map(state => state ? 1 : 0));
+
+            //const dataString = currentState.map(b => b ? '1' : '0').join(',');
             if ("send" in wsRef.current) {
-                wsRef.current.send(dataString);
+                wsRef.current.send(stateContainer);
             }
         }
     }, [w, a, s, d]);

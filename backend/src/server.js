@@ -15,7 +15,7 @@ ws.on('connection', (ws) => {
         console.log('New data:', message);
         clients.forEach(client => {
             if (client.readyState === WebSocket.OPEN && client !== ws) {
-                client.send(`${message}`);
+                client.send(message);
             }
         });
     });
