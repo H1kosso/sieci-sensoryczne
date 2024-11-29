@@ -93,7 +93,7 @@ const WebSocketClient: React.FC = () => {
 
     useEffect(() => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
-            const currentState = [a, s, w, d];
+            const currentState = [a, d, w, s];
 
             const steeringStates = new Uint8Array(currentState.map(state => state ? 1 : 0));
             if ("send" in wsRef.current) {
