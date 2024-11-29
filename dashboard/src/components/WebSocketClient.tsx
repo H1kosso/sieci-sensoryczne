@@ -56,8 +56,8 @@ const WebSocketClient: React.FC = () => {
                                 break;
 
                             case DataKind.EnvironmentData:
-                                const temperature = dataView.getFloat32(1);
-                                const humidity = dataView.getUint16(5);
+                                const temperature = dataView.getFloat32(1, true);
+                                const humidity = dataView.getUint16(5, true);
                                 appendMessage(`Temperature: ${temperature.toString()}, Humidity: ${humidity.toString()}\n`);
                                 break;
 
