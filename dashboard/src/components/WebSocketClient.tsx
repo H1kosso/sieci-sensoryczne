@@ -8,6 +8,11 @@ interface Message {
     timestamp: Date;
 }
 
+enum DataKind {
+    ToFData,
+    EnvironmentData
+};
+
 const WebSocketClient: React.FC = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputMessage, setInputMessage] = useState<string>('');
@@ -38,10 +43,27 @@ const WebSocketClient: React.FC = () => {
 
             if ("onmessage" in wsRef.current) {
                 wsRef.current.onmessage = (event: MessageEvent) => {
-                    console.log(event.data);
                     if (event.data instanceof ArrayBuffer) {
-                        const distanceData = new Int16Array(event.data);
-                        appendMessage(`Received: ${distanceData.toString()}`);
+                        const dataView = new DataView(event.data);
+
+                        const dataKind: DataKind = dataView.getUint8(0);
+                        switch (dataKind) {
+                            case DataKind.ToFData:
+                                const tofBuffer = event.data.slice(1, dataView.byteLength);
+                                const distanceData = new Int16Array(tofBuffer);
+                                console.log(distanceData.length);
+                                appendMessage(`ToF: ${distanceData.toString()}\n`);
+                                break;
+
+                            case DataKind.EnvironmentData:
+                                const temperature = dataView.getFloat32(1);
+                                const humidity = dataView.getUint16(5);
+                                appendMessage(`Temperature: ${temperature.toString()}, Humidity: ${humidity.toString()}\n`);
+                                break;
+
+                            default:
+                                appendMessage("none");
+                        }
                     }
                 };
             }
@@ -71,13 +93,11 @@ const WebSocketClient: React.FC = () => {
 
     useEffect(() => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
-            const currentState = [w, a, s, d];
+            const currentState = [a, s, w, d];
 
-            const stateContainer = new Uint8Array(currentState.map(state => state ? 1 : 0));
-
-            //const dataString = currentState.map(b => b ? '1' : '0').join(',');
+            const steeringStates = new Uint8Array(currentState.map(state => state ? 1 : 0));
             if ("send" in wsRef.current) {
-                wsRef.current.send(stateContainer);
+                wsRef.current.send(steeringStates);
             }
         }
     }, [w, a, s, d]);
