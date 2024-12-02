@@ -1,7 +1,28 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { Line } from 'react-chartjs-2';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend,
+} from 'chart.js';
 import styles from './WebSocketClient.module.css';
 import useWASD from "use-wasd";
 import appCfg from '../app-cfg';
+
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend
+);
 
 interface Message {
     text: string;
@@ -16,6 +37,8 @@ enum DataKind {
 const WebSocketClient: React.FC = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputMessage, setInputMessage] = useState<string>('');
+    const [temperatureHistory, setTemperatureHistory] = useState<number[]>([]);
+    const [humidityHistory, setHumidityHistory] = useState<number[]>([]);
     const wsRef = useRef<WebSocket | null>(null);
     const messagesContainerRef = useRef<HTMLDivElement | null>(null);
     const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
@@ -58,6 +81,18 @@ const WebSocketClient: React.FC = () => {
                             case DataKind.EnvironmentData:
                                 const temperature = dataView.getFloat32(1, true);
                                 const humidity = dataView.getUint16(5, true);
+
+                                setTemperatureHistory(prev => {
+                                    const updated = [...prev, temperature];
+                                    if (updated.length > 100) updated.shift();
+                                    return updated;
+                                });
+                                setHumidityHistory(prev => {
+                                    const updated = [...prev, humidity];
+                                    if (updated.length > 100) updated.shift();
+                                    return updated;
+                                });
+
                                 appendMessage(`Temperature: ${temperature.toString()}, Humidity: ${humidity.toString()}\n`);
                                 break;
 
@@ -133,6 +168,19 @@ const WebSocketClient: React.FC = () => {
         }
     };
 
+    const chartData = (data: number[], label: string, color: string) => ({
+        labels: data.map((_, index) => index),
+        datasets: [
+            {
+                label,
+                data,
+                borderColor: color,
+                backgroundColor: `${color}33`,
+                fill: true,
+            },
+        ],
+    });
+
     return (
         <div className={styles.container}>
             <h1>WebSocket Client</h1>
@@ -161,7 +209,17 @@ const WebSocketClient: React.FC = () => {
             >
                 Send
             </button>
+
             <code>{JSON.stringify({w, a, s, d})}</code>
+
+            <div className={styles.chartsContainer}>
+                <div className={styles.chart}>
+                    <Line data={chartData(temperatureHistory, 'Temperature', 'rgba(255, 99, 132)')}/>
+                </div>
+                <div className={styles.chart}>
+                    <Line data={chartData(humidityHistory, 'Humidity', 'rgba(54, 162, 235)')}/>
+                </div>
+            </div>
         </div>
     );
 };
