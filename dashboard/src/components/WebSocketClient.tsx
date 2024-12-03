@@ -12,7 +12,7 @@ import {
 } from 'chart.js';
 import styles from './WebSocketClient.module.css';
 import useWASD from "use-wasd";
-import appCfg from '../app-cfg';
+import appCfgExample from '../app-cfg-example.ts';
 
 ChartJS.register(
     CategoryScale,
@@ -39,9 +39,15 @@ const WebSocketClient: React.FC = () => {
     const [inputMessage, setInputMessage] = useState<string>('');
     const [temperatureHistory, setTemperatureHistory] = useState<number[]>([]);
     const [humidityHistory, setHumidityHistory] = useState<number[]>([]);
-    const wsRef = useRef<WebSocket | null>(null);
     const messagesContainerRef = useRef<HTMLDivElement | null>(null);
     const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+
+    const canvasRef = useRef(null);
+    const wsRef = useRef<WebSocket | null>(null);
+
+    const width_ToF = 8;
+    const height_ToF = 8;
+
 
     const options = useMemo(
         () => ({
@@ -53,8 +59,8 @@ const WebSocketClient: React.FC = () => {
 
     useEffect(() => {
         const setupWebSocket = () => {
-            const webSocketType = appCfg.isSecure ? 'wss' : 'ws';
-            wsRef.current = new WebSocket(`${webSocketType}://${appCfg.apiUrl}`);
+            const webSocketType = appCfgExample.isSecure ? 'wss' : 'ws';
+            wsRef.current = new WebSocket(`${webSocketType}://${appCfgExample.apiUrl}`);
             wsRef.current.binaryType = 'arraybuffer';
 
             if ("onopen" in wsRef.current) {
@@ -74,6 +80,7 @@ const WebSocketClient: React.FC = () => {
                             case DataKind.ToFData:
                                 const tofBuffer = event.data.slice(1, dataView.byteLength);
                                 const distanceData = new Int16Array(tofBuffer);
+                                drawCameraFeed(distanceData);
                                 console.log(distanceData.length);
                                 appendMessage(`ToF: ${distanceData.toString()}\n`);
                                 break;
@@ -181,36 +188,67 @@ const WebSocketClient: React.FC = () => {
         ],
     });
 
+    const drawCameraFeed = (data: Int16Array): void => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d') as CanvasRenderingContext2D | null;
+        if (!ctx) return;
+
+        const cellWidth = canvas.width / width_ToF;
+        const cellHeight = canvas.height / height_ToF;
+
+        const minDist = Math.min(...data);
+        const maxDist = Math.max(...data);
+
+        for (let y = 0; y < HEIGHT; y++) {
+            for (let x = 0; x < WIDTH; x++) {
+                const value = data[y * WIDTH + x];
+                const normalizedValue = (value - minDist) / (maxDist - minDist);
+
+                const r = Math.floor(normalizedValue * 255);
+                const b = Math.floor((1 - normalizedValue) * 255);
+
+                ctx.fillStyle = `rgb(${r}, 0, ${b})`;
+                ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+            }
+        }
+    };
+
     return (
         <div className={styles.container}>
-            <h1>WebSocket Client</h1>
-            <div
-                ref={messagesContainerRef}
-                className={styles.messagesContainer}
-            >
-                {messages.map((message, index) => (
-                    <div key={index} className={styles.message}>
-                        <span>{message.timestamp.toLocaleTimeString()}: </span>
-                        {message.text}
-                    </div>
-                ))}
-            </div>
-            <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyDown={handleKeyPress}
-                className={styles.messageInput}
-                placeholder="Type your message..."
-            />
-            <button
-                onClick={handleSend}
-                className={styles.sendButton}
-            >
-                Send
-            </button>
 
-            <code>{JSON.stringify({w, a, s, d})}</code>
+            <div className={styles.messageViewContainer}>
+
+
+                <h1>WebSocket Client</h1>
+                <div
+                    ref={messagesContainerRef}
+                    className={styles.messagesContainer}
+                >
+                    {messages.map((message, index) => (
+                        <div key={index} className={styles.message}>
+                            <span>{message.timestamp.toLocaleTimeString()}: </span>
+                            {message.text}
+                        </div>
+                    ))}
+                </div>
+                <input
+                    type="text"
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    className={styles.messageInput}
+                    placeholder="Type your message..."
+                />
+                <button
+                    onClick={handleSend}
+                    className={styles.sendButton}
+                >
+                    Send
+                </button>
+                <code>{JSON.stringify({w, a, s, d})}</code>
+            </div>
 
             <div className={styles.chartsContainer}>
                 <div className={styles.chart}>
@@ -219,6 +257,20 @@ const WebSocketClient: React.FC = () => {
                 <div className={styles.chart}>
                     <Line data={chartData(humidityHistory, 'Humidity', 'rgba(54, 162, 235)')}/>
                 </div>
+            </div>
+
+            <div>
+
+            </div>
+
+            <div className={styles.cameraView}>
+
+                <canvas
+                    ref={canvasRef}
+                    width={480}
+                    height={480}
+                    className="border border-gray-300 rounded"
+                />
             </div>
         </div>
     );
