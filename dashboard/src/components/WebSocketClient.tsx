@@ -45,9 +45,11 @@ const WebSocketClient: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
 
+    // ToF configuration data
     const width_ToF = 8;
     const height_ToF = 8;
-
+    const minDist = 20; // 20mm
+    const maxDist = 3000; // 3m
 
     const options = useMemo(
         () => ({
@@ -198,16 +200,13 @@ const WebSocketClient: React.FC = () => {
         const cellWidth = canvas.width / width_ToF;
         const cellHeight = canvas.height / height_ToF;
 
-        const minDist = Math.min(...data);
-        const maxDist = Math.max(...data);
-
         for (let y = 0; y < height_ToF; y++) {
             for (let x = 0; x < width_ToF; x++) {
-                const value = data[y * width_ToF + x];
+                const value = data[x * width_ToF + y]; // read the data vertically
                 const normalizedValue = (value - minDist) / (maxDist - minDist);
 
-                const r = Math.floor(normalizedValue * 255);
-                const b = Math.floor((1 - normalizedValue) * 255);
+                const r = Math.floor((1 - normalizedValue) * 255);
+                const b = Math.floor(normalizedValue * 255);
 
                 ctx.fillStyle = `rgb(${r}, 0, ${b})`;
                 ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
