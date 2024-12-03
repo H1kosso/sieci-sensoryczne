@@ -42,7 +42,7 @@ const WebSocketClient: React.FC = () => {
     const messagesContainerRef = useRef<HTMLDivElement | null>(null);
     const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
-    const canvasRef = useRef(null);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
 
     const width_ToF = 8;
@@ -201,9 +201,9 @@ const WebSocketClient: React.FC = () => {
         const minDist = Math.min(...data);
         const maxDist = Math.max(...data);
 
-        for (let y = 0; y < HEIGHT; y++) {
-            for (let x = 0; x < WIDTH; x++) {
-                const value = data[y * WIDTH + x];
+        for (let y = 0; y < height_ToF; y++) {
+            for (let x = 0; x < width_ToF; x++) {
+                const value = data[y * width_ToF + x];
                 const normalizedValue = (value - minDist) / (maxDist - minDist);
 
                 const r = Math.floor(normalizedValue * 255);
