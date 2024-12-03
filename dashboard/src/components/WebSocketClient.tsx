@@ -12,7 +12,7 @@ import {
 } from 'chart.js';
 import styles from './WebSocketClient.module.css';
 import useWASD from "use-wasd";
-import appCfgExample from '../app-cfg-example.ts';
+import appCfg from '../app-cfg.ts';
 
 ChartJS.register(
     CategoryScale,
@@ -59,8 +59,8 @@ const WebSocketClient: React.FC = () => {
 
     useEffect(() => {
         const setupWebSocket = () => {
-            const webSocketType = appCfgExample.isSecure ? 'wss' : 'ws';
-            wsRef.current = new WebSocket(`${webSocketType}://${appCfgExample.apiUrl}`);
+            const webSocketType = appCfg.isSecure ? 'wss' : 'ws';
+            wsRef.current = new WebSocket(`${webSocketType}://${appCfg.apiUrl}`);
             wsRef.current.binaryType = 'arraybuffer';
 
             if ("onopen" in wsRef.current) {

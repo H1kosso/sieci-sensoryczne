@@ -1,5 +1,5 @@
 import WebSocket, { WebSocketServer } from 'ws';
-import config from './server-cfg-example.js';
+import config from './server-cfg.js';
 
 const ws = new WebSocketServer({ port: config.port });
 

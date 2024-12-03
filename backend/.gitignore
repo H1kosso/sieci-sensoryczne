@@ -130,4 +130,4 @@ dist
 .pnp.*
 
 # Custom
-src/server-cfg-example.js
+src/server-cfg.*
