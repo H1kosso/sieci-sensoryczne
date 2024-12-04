@@ -40,8 +40,8 @@ const WebSocketClient: React.FC = () => {
     // ToF configuration data
     const width_ToF = 8;
     const height_ToF = 8;
-    const minDist = 20; // 20mm
-    const maxDist = 3000; // 3m
+    const minDist = 50; // 5cm
+    const maxDist = 1500; // 1.5m
 
     // Char configuration
     const maxEntriesInChart = 50;
