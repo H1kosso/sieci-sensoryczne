@@ -24,4 +24,4 @@ dist-ssr
 *.sw?
 
 # Custom
-src/app-cfg-example.ts
+src/app-cfg.*

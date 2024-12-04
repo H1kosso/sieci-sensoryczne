@@ -12,7 +12,7 @@ import {
 } from 'chart.js';
 import styles from './WebSocketClient.module.css';
 import useWASD from "use-wasd";
-import appCfgExample from '../app-cfg-example.ts';
+import appCfg from '../app-cfg.ts';
 
 ChartJS.register(
     CategoryScale,
@@ -24,22 +24,14 @@ ChartJS.register(
     Legend
 );
 
-interface Message {
-    text: string;
-    timestamp: Date;
-}
-
 enum DataKind {
     ToFData,
     EnvironmentData
 };
 
 const WebSocketClient: React.FC = () => {
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [inputMessage, setInputMessage] = useState<string>('');
     const [temperatureHistory, setTemperatureHistory] = useState<number[]>([]);
     const [humidityHistory, setHumidityHistory] = useState<number[]>([]);
-    const messagesContainerRef = useRef<HTMLDivElement | null>(null);
     const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -51,9 +43,14 @@ const WebSocketClient: React.FC = () => {
     const minDist = 20; // 20mm
     const maxDist = 3000; // 3m
 
+    // Char configuration
+    const maxEntriesInChart = 50;
+
+    const controlKeys = ["w", "a", "s", "d"];
+
     const options = useMemo(
         () => ({
-            allowed: ["w", "a", "s", "d"],
+            allowed: controlKeys,
         }),
         []
     );
@@ -61,14 +58,13 @@ const WebSocketClient: React.FC = () => {
 
     useEffect(() => {
         const setupWebSocket = () => {
-            const webSocketType = appCfgExample.isSecure ? 'wss' : 'ws';
-            wsRef.current = new WebSocket(`${webSocketType}://${appCfgExample.apiUrl}`);
+            const webSocketType = appCfg.isSecure ? 'wss' : 'ws';
+            wsRef.current = new WebSocket(`${webSocketType}://${appCfg.apiUrl}`);
             wsRef.current.binaryType = 'arraybuffer';
 
             if ("onopen" in wsRef.current) {
                 wsRef.current.onopen = () => {
-                    appendMessage('Connected to server.');
-                    appendMessage('Starting to send steer data.');
+                    console.log("Connected to server")
                 };
             }
 
@@ -83,8 +79,6 @@ const WebSocketClient: React.FC = () => {
                                 const tofBuffer = event.data.slice(1, dataView.byteLength);
                                 const distanceData = new Int16Array(tofBuffer);
                                 drawCameraFeed(distanceData);
-                                console.log(distanceData.length);
-                                appendMessage(`ToF: ${distanceData.toString()}\n`);
                                 break;
 
                             case DataKind.EnvironmentData:
@@ -93,20 +87,18 @@ const WebSocketClient: React.FC = () => {
 
                                 setTemperatureHistory(prev => {
                                     const updated = [...prev, temperature];
-                                    if (updated.length > 100) updated.shift();
+                                    if (updated.length > maxEntriesInChart) updated.shift();
                                     return updated;
                                 });
                                 setHumidityHistory(prev => {
                                     const updated = [...prev, humidity];
-                                    if (updated.length > 100) updated.shift();
+                                    if (updated.length > maxEntriesInChart) updated.shift();
                                     return updated;
                                 });
-
-                                appendMessage(`Temperature: ${temperature.toString()}, Humidity: ${humidity.toString()}\n`);
                                 break;
 
                             default:
-                                appendMessage("none");
+                                console.log("DataKind not found");
                         }
                     }
                 };
@@ -118,7 +110,7 @@ const WebSocketClient: React.FC = () => {
                         clearInterval(intervalRef.current);
                         intervalRef.current = undefined;
                     }
-                    appendMessage('Connection closed.');
+                    console.log('Connection closed.');
                 };
             }
         };
@@ -145,37 +137,6 @@ const WebSocketClient: React.FC = () => {
             }
         }
     }, [w, a, s, d]);
-
-    useEffect(() => {
-        if (messagesContainerRef.current) {
-            if ("scrollTop" in messagesContainerRef.current) {
-                messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-            }
-        }
-    }, [messages]);
-
-    const appendMessage = (text: string) => {
-        setMessages(prev => [...prev, {
-            text,
-            timestamp: new Date()
-        }]);
-    };
-
-    const handleSend = () => {
-        if (inputMessage.trim() && wsRef.current?.readyState === WebSocket.OPEN) {
-            if ("send" in wsRef.current) {
-                wsRef.current.send(inputMessage);
-            }
-            appendMessage(`Sent: ${inputMessage}`);
-            setInputMessage('');
-        }
-    };
-
-    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-            handleSend();
-        }
-    };
 
     const chartData = (data: number[], label: string, color: string) => ({
         labels: data.map((_, index) => index),
@@ -215,6 +176,7 @@ const WebSocketClient: React.FC = () => {
     };
 
     return (
+
         <div className={styles.container}>
             <h1 className={styles.header}>ESP-32 Robot Controller</h1>
 
@@ -223,11 +185,8 @@ const WebSocketClient: React.FC = () => {
                     <div className={styles.chart}>
                         <Line data={chartData(temperatureHistory, 'Temperature', 'rgba(255, 99, 132)')}/>
                     </div>
-                    <div className={styles.chart}>
-                        <Line data={chartData(humidityHistory, 'Humidity', 'rgba(54, 162, 235)')}/>
-                    </div>
-                </div>
 
+                </div>
                 <div className={styles.cameraView}>
                     <canvas
                         ref={canvasRef}
@@ -235,10 +194,20 @@ const WebSocketClient: React.FC = () => {
                         height={480}
                         className="border border-gray-300 rounded"
                     />
+                    <div className={styles.controlKeys}>
+                        {
+                            [w, a, s, d].map((isKeyPressed, index) => { return <p style={{ color: `rgba(255, 100, 100, ${isKeyPressed ? 1.0 : 0.3})` }}>{controlKeys[index]}</p> })
+                        }
+                    </div>
+                </div>
+                <div className={styles.chartsContainer}>
+                    <div className={styles.chart}>
+                        <Line data={chartData(humidityHistory, 'Humidity', 'rgba(54, 162, 235)')} />
+                    </div>
                 </div>
             </div>
-
         </div>
+
     );
 };
 
