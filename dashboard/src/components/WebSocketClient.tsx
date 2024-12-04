@@ -12,7 +12,7 @@ import {
 } from 'chart.js';
 import styles from './WebSocketClient.module.css';
 import useWASD from "use-wasd";
-import appCfg from '../app-cfg.ts';
+import appCfgExample from '../app-cfg-example.ts';
 
 ChartJS.register(
     CategoryScale,
@@ -61,8 +61,8 @@ const WebSocketClient: React.FC = () => {
 
     useEffect(() => {
         const setupWebSocket = () => {
-            const webSocketType = appCfg.isSecure ? 'wss' : 'ws';
-            wsRef.current = new WebSocket(`${webSocketType}://${appCfg.apiUrl}`);
+            const webSocketType = appCfgExample.isSecure ? 'wss' : 'ws';
+            wsRef.current = new WebSocket(`${webSocketType}://${appCfgExample.apiUrl}`);
             wsRef.current.binaryType = 'arraybuffer';
 
             if ("onopen" in wsRef.current) {
@@ -216,61 +216,28 @@ const WebSocketClient: React.FC = () => {
 
     return (
         <div className={styles.container}>
+            <h1 className={styles.header}>ESP-32 Robot Controller</h1>
 
-            <div className={styles.messageViewContainer}>
-
-
-                <h1>WebSocket Client</h1>
-                <div
-                    ref={messagesContainerRef}
-                    className={styles.messagesContainer}
-                >
-                    {messages.map((message, index) => (
-                        <div key={index} className={styles.message}>
-                            <span>{message.timestamp.toLocaleTimeString()}: </span>
-                            {message.text}
-                        </div>
-                    ))}
+            <div className={styles.contentContainer}>
+                <div className={styles.chartsContainer}>
+                    <div className={styles.chart}>
+                        <Line data={chartData(temperatureHistory, 'Temperature', 'rgba(255, 99, 132)')}/>
+                    </div>
+                    <div className={styles.chart}>
+                        <Line data={chartData(humidityHistory, 'Humidity', 'rgba(54, 162, 235)')}/>
+                    </div>
                 </div>
-                <input
-                    type="text"
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyDown={handleKeyPress}
-                    className={styles.messageInput}
-                    placeholder="Type your message..."
-                />
-                <button
-                    onClick={handleSend}
-                    className={styles.sendButton}
-                >
-                    Send
-                </button>
-                <code>{JSON.stringify({w, a, s, d})}</code>
-            </div>
 
-            <div className={styles.chartsContainer}>
-                <div className={styles.chart}>
-                    <Line data={chartData(temperatureHistory, 'Temperature', 'rgba(255, 99, 132)')}/>
-                </div>
-                <div className={styles.chart}>
-                    <Line data={chartData(humidityHistory, 'Humidity', 'rgba(54, 162, 235)')}/>
+                <div className={styles.cameraView}>
+                    <canvas
+                        ref={canvasRef}
+                        width={480}
+                        height={480}
+                        className="border border-gray-300 rounded"
+                    />
                 </div>
             </div>
 
-            <div>
-
-            </div>
-
-            <div className={styles.cameraView}>
-
-                <canvas
-                    ref={canvasRef}
-                    width={480}
-                    height={480}
-                    className="border border-gray-300 rounded"
-                />
-            </div>
         </div>
     );
 };
