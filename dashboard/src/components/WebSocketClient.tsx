@@ -196,7 +196,7 @@ const WebSocketClient: React.FC = () => {
                     />
                     <div className={styles.controlKeys}>
                         {
-                            [w, a, s, d].map((isKeyPressed, index) => { return <p style={{ color: `rgba(255, 100, 100, ${isKeyPressed ? 1.0 : 0.3})` }}>{controlKeys[index]}</p> })
+                            [w, a, s, d].map((isKeyPressed, index) => { return <p key={index} style={{ color: `rgba(255, 100, 100, ${isKeyPressed ? 1.0 : 0.3})` }}>{controlKeys[index]}</p> })
                         }
                     </div>
                 </div>
